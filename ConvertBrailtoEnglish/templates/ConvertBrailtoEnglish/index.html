@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style type="text/css">
+		.outerContainer
+		{
+			background-color: #FFFFFF;
+			padding: 50px 0px;
+			margin: 0px 10px;
+		}
+
+		.formContainer
+		{
+			width: 100%;
+		    max-width: 500px;
+		    margin: 0px auto;
+		}
+
+		.form
+		{
+			padding: 50px 0px;
+			background-color: #d4d4d4;
+		}
+
+		.formElementContainer
+		{
+			text-align: center;
+			padding: 5px 10px 0px 10px;
+		}
+
+		#fileToUpload
+		{
+			width: 0.1px;
+			height: 0.1px;
+			opacity: 0;
+			overflow: hidden;
+			position: absolute;
+			z-index: -1;
+		}
+
+		.inputFile + label {
+		    font-size: 1.25em;
+		    color: white;
+		    display: inline-block;
+		    cursor: pointer;
+			background-color: #78122c;
+		    border: 0px;
+		    padding: 10px;
+		    width: 150px;
+		}
+
+		.progressContainer
+		{
+			width: 100%;
+		}
+
+		#progressBar
+		{
+			width: 0%;
+			height: 10px;
+			background-color: #78122c;
+			-webkit-transition: width 1s; /* Safari */
+    		transition: width 1s
+		}
+
+		.output
+		{
+			width: 100%;
+		    max-width: 500px;
+		    margin: 10px auto 0px auto;
+		}
+
+		h3, p
+		{
+			margin: 5px 0px;
+		}
+	</style>
+</head>
+<body style="margin: 0px">
+	<div class="outerContainer">
+		<div class="formContainer">
+			<div class="form">
+				<form onsubmit="return false;" enctype="multipart/form-data">
+					{% csrf_token %}
+				    <div class="formElementContainer">
+				    	<input type="file" name="fileToUpload" id="fileToUpload" class="inputFile">
+				    	<label for="fileToUpload">Choose a file</label>
+				    </div>
+<!-- 				    <div class="formElementContainer">
+				    	<span id="selectedFileName"></span>
+				    </div>
+				    <div class="formElementContainer">
+				    	<span id="progress"></span>
+				    </div> -->
+				</form>
+			</div>
+			<div class="progressContainer">
+				<div id="progressBar"></div>
+			</div>
+		</div>
+		<div class="output">
+			<h3>OUTPUT : </h3>
+			<p id="translatedText"></p>
+		</div>
+	</div>
+</body>
+<script type="text/javascript">
+	var inputs = document.querySelectorAll( '.inputFile' );
+	Array.prototype.forEach.call( inputs, function( input )
+	{
+		input.addEventListener( 'change', function( e )
+		{
+			document.getElementsByClassName("progressContainer")[0].style.display = "None";
+			document.getElementById("progressBar").style.width = "0%";
+			document.getElementsByClassName("progressContainer")[0].style.display = "Block";
+
+			var fileName = '';
+			console.log(e.target.files);
+
+			fileName = e.target.value.split( '\\' ).pop();
+			
+			if( fileName )
+			{
+				uploadFile(e.target.files);
+			}
+		});
+	});
+
+	var selectedFile = document.getElementById("fileToUpload");
+
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+	function fileUploadProgress(event)
+	{
+		var totalProgress = Math.round(event.loaded / event.total * 100);
+		var progressBar = document.getElementById("progressBar");
+		progressBar.style.width = totalProgress + "%";
+
+	}
+
+	function fileUploadCompleted(event)
+	{
+		document.getElementsByClassName("progressContainer")[0].style.display = "None";
+		document.getElementById("progressBar").style.width = "0%";
+		document.getElementsByClassName("progressContainer")[0].style.display = "Block";
+	}
+
+	function uploadFile(files)
+	{
+		var formData = new FormData();
+
+		// Loop through each of the selected files.
+		for (var i = 0; i < files.length; i++) {
+			var file = files[i];
+			// Check the file type.
+			//if (!file.type.match('image.*')) {
+			//continue;
+			//}
+			// Add the file to the request.
+			formData.append('fileToUpload', file, file.name);
+		}
+
+		var xhttp = new XMLHttpRequest();
+		// xhttp.upload.addEventListener("loadstart", fileUploadStarted, false);  
+        xhttp.upload.addEventListener("progress", fileUploadProgress);  
+        // xhttp.upload.addEventListener("load", fileUploadCompleted);
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+			 	var response = JSON.parse(this.responseText)
+			 	if (response["success"] == true) {
+			 		document.getElementById("translatedText").innerHTML = response["data"]
+			 	} else {
+			 		document.getElementById("translatedText").innerHTML = "No Output"
+			 	}
+			}
+		}
+		xhttp.open("POST", "upload", true);
+		xhttp.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+		xhttp.send(formData);
+	}
+</script>
+</html>
