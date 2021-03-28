@@ -1,0 +1,7 @@
+open cmd
+navigate to bemyeyes project directory
+type workon bemyeyesenv
+type python manage.py runserver
+open browser
+type http://localhost:8000/convertBrailToEnglish/
+to stop server : control + c
